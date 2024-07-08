@@ -1,0 +1,147 @@
+﻿@page "/CreateUser"
+@inject IntServices<AspNetUsers> userService
+@inject NavigationManager navigation
+
+<EditForm Model="Usuario" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <div class="card">
+        <div class="card-header">
+            <h1>Registro de Usuarios</h1>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                
+
+                <div class="col-6">
+                    <label class="fw-bold">Nombre del Usuario:</label>
+                    <InputText @bind-Value="Usuario.UserName" class="form-control"></InputText>
+                    <ValidationMessage For="@(() => Usuario.UserName)" />
+                </div>
+                <div class="col-6">
+                    <label class="fw-bold">Email</label>
+                    <InputText @bind-Value="Usuario.Email" class="form-control mb-3"></InputText>
+                    <ValidationMessage For="@(() => Usuario.Email)" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6">
+                    <label class="fw-bold">Contraseña:</label>
+                    <InputText @bind-Value="Usuario.PasswordHash" class="form-control"></InputText>
+                    <ValidationMessage For="@(() => Usuario.PasswordHash)" />
+
+                </div>
+                <div class="col-6">
+                    <label class="fw-bold">Telefono:</label>
+                    <InputText @bind-Value="Usuario.PhoneNumber" class="form-control"></InputText>
+                    <ValidationMessage For="@(() => Usuario.PhoneNumber)" />
+
+                </div>
+                <div class="col-6">
+                    <label class="fw-bold">Fecha:</label>
+                    <InputDate @bind-Value="Usuario.LockoutEnd" class="form-control"></InputDate>
+                    <ValidationMessage For="@(() => Usuario.LockoutEnd)" />
+
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-success bi-floppy-fill">Guardar</button>
+        </div>
+
+    </div>
+
+</EditForm>
+
+
+
+
+@code {
+    public int UserId { get; set; }
+    public AspNetUsers Usuario { get; set; } = new AspNetUsers();
+
+    public AspNetRoles Roles { get; set; } = new AspNetRoles();
+    public AspNetRoleClaims Detalle { get; set; } = new AspNetRoleClaims();
+    public string ErrorMessage { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId > 0)
+        {
+            this.Usuario.UserId = UserId;
+            await Buscar();
+        }
+    }
+    public async Task Buscar()
+    {
+        var UserIdEncontrado = (await userService.GetAll())!.
+        ToList().
+        Any(us => us.UserId == Usuario.UserId);
+
+        if (UserIdEncontrado)
+        {
+            var UserEncontrado = await userService.Get(Usuario.UserId);
+            if (UserEncontrado != null)
+            {
+                this.Usuario = UserEncontrado;
+                StateHasChanged();
+            }
+        }
+    }
+
+    public async Task Guardar()
+    {
+        try
+        {
+            var response = await userService.Add(Usuario);
+            navigation.NavigateTo("/success");
+        }
+        catch (Exception ex)
+        {
+            // Manejar errores, por ejemplo, mostrar un mensaje en la interfaz de usuario
+            ErrorMessage = ex.Message;
+            Console.WriteLine($"Error: {ErrorMessage}");
+        }
+
+    }
+
+    public void Nuevo()
+    {
+        Usuario = new AspNetUsers();
+
+    }
+
+    public async Task Eliminar()
+    {
+        var Response = await userService.Delete(Usuario.UserId);
+    }
+
+    public async void AgregarDetalle()
+    {
+        if (Detalle.Id != 0 && Detalle.ClaimValue != null)
+        {
+            var nuevoDetalle = new AspNetRoleClaims()
+                {
+                    RoleId = Detalle.RoleId,
+                    ClaimType = Detalle.ClaimType,
+                    ClaimValue = Detalle.ClaimValue
+
+
+                };
+            Usuario.UserDetalle.Add(nuevoDetalle);
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("No requeriso");
+        }
+    }
+    public async Task RemoverDetalle(AspNetRoleClaims detalle)
+    {
+        Usuario.UserDetalle.Remove(detalle);
+        StateHasChanged();
+    }
+
+}
+}
