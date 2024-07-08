@@ -1,0 +1,131 @@
+﻿@page "/CreateRol"
+@inject IntServices<AspNetRoles> roleService
+@inject IntServices<AspNetRoleClaims> claimService
+@inject NavigationManager navigation
+
+<PageTitle>Crear nuevo rol</PageTitle>
+<EditForm Model="Rol" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <div class="container">
+        <div class="card shadow-lg">
+            <div class="card-header text-center">
+                <div>
+                    <h3><strong>Crear Role</strong></h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label" for="name"><strong>Nombre</strong></label>
+                        <InputText class="form-control" id="name" @bind-Value="Rol.Name"></InputText>
+                        <ValidationMessage For="@(() => Rol.Name)" />
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-4">
+                        <label class="form-label"><strong>Claim Type</strong></label>
+                        <InputText class="form-control" @bind-Value="claimtypeSelected"></InputText>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label"><strong>Claim Value</strong></label>
+                        <InputText class="form-control" @bind-Value="claimvalueSelected"></InputText>
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-success mt-4 bi bi-plus-circle-fill" @onclick="agregarDetalle"> </button>
+                    </div>
+                </div>
+                <table class="table table-bordered mt-3">
+                    <thead>
+                        <tr>
+                            <th>Claim Type</th>
+                            <th>Claim Value</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var claim in ClaimsList)
+                        {
+                            <tr>
+                                <td>@claim.ClaimType</td>
+                                <td>@claim.ClaimValue</td>
+                                <td>
+                                    <button class="btn btn-danger bi bi-trash-fill" @onclick="() => RemoverDetalle(claim)">  Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-center">
+                <button type="button" class="btn btn-secondary ms-2 bi bi-arrow-90deg-left" @onclick="Volver">  Volver</button>
+                <button type="submit" class="btn btn-primary ms-2 bi bi-floppy-fill">  Guardar</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@Mensaje
+
+@code {
+    public AspNetRoles Rol { get; set; } = new AspNetRoles();
+    public string Mensaje { get; set; } = string.Empty;
+    public List<AspNetRoleClaims> ClaimsList { get; set; } = new List<AspNetRoleClaims>();
+
+    public string claimtypeSelected = "";
+    public string claimvalueSelected = "";
+
+    public async Task Guardar()
+    {
+        try
+        {
+            var createdRole = await roleService.Add(Rol);
+            if (createdRole != null)
+            {
+                foreach (var claim in ClaimsList)
+                {
+                    claim.RoleId = createdRole.Id;
+                    await claimService.Add(claim);
+                }
+                Mensaje = "Rol Creado Correctamente";
+                Rol = new AspNetRoles();
+                ClaimsList.Clear();
+            }
+            else
+            {
+                Mensaje = "Error al crear el rol";
+            }
+        }
+        catch (Exception ex)
+        {
+            Mensaje = $"Error al guardar el rol: {ex.Message}";
+        }
+    }
+
+    public void agregarDetalle()
+    {
+        if (!string.IsNullOrEmpty(claimtypeSelected) && !string.IsNullOrEmpty(claimvalueSelected))
+        {
+            ClaimsList.Add(new AspNetRoleClaims
+                {
+                    ClaimType = claimtypeSelected,
+                    ClaimValue = claimvalueSelected
+                });
+            claimtypeSelected = "";
+            claimvalueSelected = "";
+        }
+        else
+        {
+            Mensaje = "El Detalle Es requerido";
+        }
+    }
+
+    public void RemoverDetalle(AspNetRoleClaims claim)
+    {
+        ClaimsList.Remove(claim);
+    }
+
+    private void Volver()
+    {
+        navigation.NavigateTo("/Roles");
+    }
+}
