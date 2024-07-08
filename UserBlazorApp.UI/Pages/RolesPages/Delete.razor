@@ -1,0 +1,72 @@
+﻿@page "/DeleteRole/{RoleId:int}"
+@inject IntServices<AspNetRoles> roleServices
+@inject NavigationManager Navigation
+<PageTitle>Eliminar Rol</PageTitle>
+
+@if (Role == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <div class="container">
+        <div class="card shadow-lg">
+            <!-- Header -->
+            <div class="card-header text-center">
+                <div>
+                    <h3><strong>Eliminar rol</strong></h3>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label"><strong>RoleId</strong></label>
+                        <p>@Role.Id</p>
+                        <label class="form-label"><strong>Nombre del Rol</strong></label>
+                        <p>@Role.Name</p>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="card-footer text-center">
+                    <button class="btn btn-secondary ms-2 bi bi-arrow-90deg-left" @onclick="Volver">  Volver</button>
+                    <button class="btn btn-danger ms-2 bi bi-trash-fill" @onclick="Eliminar">  Eliminar</button>
+                </div>
+            </div>
+        </div>
+        @Mensaje
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public int RoleId { get; set; }
+    public AspNetRoles Role { get; set; } = new AspNetRoles();
+    public string Mensaje { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Role = await roleServices.Get(RoleId);
+    }
+
+    public async Task Eliminar()
+    {
+        var res = await roleServices.Delete(RoleId);
+        if (res)
+        {
+            Mensaje = "Rol Eliminado Exitosamente";
+            Navigation.NavigateTo("/IndexRoles");
+        }
+        else
+        {
+            Mensaje = "Error";
+        }
+    }
+    public void Volver()
+    {
+        Navigation.NavigateTo("/IndexRoles");
+    }
+
+}
